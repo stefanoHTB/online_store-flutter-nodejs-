@@ -1,28 +1,102 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
+import 'package:online_store/common/widgets/loader.dart';
+import 'package:online_store/features/account/widgets/single_product.dart';
 import 'package:online_store/features/admin/screens/add_post_screen.dart';
+import 'package:online_store/features/admin/services/admin_services.dart';
+import 'package:online_store/features/product_details.dart/screens/product_details_screen.dart';
+import 'package:online_store/models/product.dart';
 
 class PostsScreen extends StatefulWidget {
-  PostsScreen({Key? key}) : super(key: key);
+  const PostsScreen({Key? key}) : super(key: key);
 
   @override
   State<PostsScreen> createState() => _PostsScreenState();
 }
 
 class _PostsScreenState extends State<PostsScreen> {
+  List<Product>? products;
+  final AdminServices adminServices = AdminServices();
+
   void navigateToAddProduct() {
     Navigator.pushNamed(context, AddProductScreen.routeName);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(child: Text('products')),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: navigateToAddProduct,
-        tooltip: 'Add a Product',
-      ),
-      //floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+  void initState() {
+    super.initState();
+    fetchAllProducts();
+  }
+
+  fetchAllProducts() async {
+    products = await adminServices.fetchAllProducts(context);
+    setState(() {});
+  }
+
+  void deleteProduct(Product product, int index) {
+    adminServices.deleteProduct(
+      context: context,
+      product: product,
+      onSucess: () {
+        products!.removeAt(index);
+        setState(() {});
+      },
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return products == null
+        ? const Loader()
+        : Scaffold(
+            body: GridView.builder(
+                itemCount: products!.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2),
+                itemBuilder: (context, index) {
+                  final productData = products![index];
+                  ////////////////////////////////////////////////////////////
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                          context, ProductDetailsScreen.routeName,
+                          arguments: productData);
+                    },
+                    //////////////////////////////////////////////////////////
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 140,
+                          child: SingleProduct(
+                            image: productData.images[0],
+                          ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Expanded(
+                                child: Text(
+                              productData.name,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            )),
+                            IconButton(
+                                onPressed: () =>
+                                    deleteProduct(productData, index),
+                                icon: const Icon(Icons.delete_outline))
+                          ],
+                        )
+                      ],
+                    ),
+                  );
+                }),
+            floatingActionButton: FloatingActionButton(
+              child: const Icon(Icons.add),
+              onPressed: navigateToAddProduct,
+              tooltip: 'Add a Product',
+            ),
+            //floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          );
   }
 }

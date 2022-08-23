@@ -1,20 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:online_store/common/widgets/loader.dart';
 import 'package:online_store/constants/global_variables.dart';
 import 'package:online_store/features/home/widgets/address_box.dart';
-import 'package:online_store/features/home/widgets/carousel_image.dart';
-import 'package:online_store/features/home/widgets/deal_of_the_day.dart';
-import 'package:online_store/features/home/widgets/top_categories.dart';
-import 'package:online_store/features/search/screens/search_screen.dart';
+import 'package:online_store/features/product_details.dart/screens/product_details_screen.dart';
+import 'package:online_store/features/search/services/search_services.dart';
+import 'package:online_store/features/search/widgets/searched_product.dart';
+import 'package:online_store/models/product.dart';
 
-class HomeScreen extends StatefulWidget {
-  static const String routeName = '/home';
-  const HomeScreen({Key? key}) : super(key: key);
+class SearchScreen extends StatefulWidget {
+  static const String routeName = '/search-screen';
+  final String searchQuery;
+  const SearchScreen({Key? key, required this.searchQuery}) : super(key: key);
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _SearchScreenState extends State<SearchScreen> {
+  List<Product>? products;
+  final SearchServices searchServices = SearchServices();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSearchedProduct();
+  }
+
+  fetchSearchedProduct() async {
+    products = await searchServices.fetchSearchProduct(
+        context: context, searchQuery: widget.searchQuery);
+    setState(() {});
+  }
+
   void navigateToSearchScreen(String query) {
     Navigator.pushNamed(context, SearchScreen.routeName, arguments: query);
   }
@@ -26,8 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
         preferredSize: const Size.fromHeight(60),
         child: AppBar(
           flexibleSpace: Container(
-            decoration:
-                const BoxDecoration(gradient: GlobalVariables.appBarGradient),
+            decoration: BoxDecoration(gradient: GlobalVariables.appBarGradient),
           ),
           title:
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -83,22 +99,29 @@ class _HomeScreenState extends State<HomeScreen> {
           ]),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            AddressBox(),
-            SizedBox(
-              height: 10,
+      body: products == null
+          ? const Loader()
+          : Center(
+              child: Column(children: [
+                const AddressBox(),
+                const SizedBox(
+                  height: 10,
+                ),
+                Expanded(
+                  child: ListView.builder(
+                      itemCount: products!.length,
+                      itemBuilder: (context, index) {
+                        return GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                  context, ProductDetailsScreen.routeName,
+                                  arguments: products![index]);
+                            },
+                            child: SearchedProduct(product: products![index]));
+                      }),
+                ),
+              ]),
             ),
-            TopCategories(),
-            SizedBox(
-              height: 10,
-            ),
-            CarouselIMage(),
-            DealOfDay()
-          ],
-        ),
-      ),
     );
   }
 }

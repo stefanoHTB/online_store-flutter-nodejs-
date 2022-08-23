@@ -180,7 +180,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
               CustomButton(
                 text: 'Sell',
-                onTap: () {},
+                onTap: sellProduct,
               )
             ]),
           ),
